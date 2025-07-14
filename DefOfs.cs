@@ -12,10 +12,12 @@ namespace Apflu.VimPetrify
     public static class DefOfs
     {
         public static HediffDef StonePetrifiedHediff;
+        public static ThingDef BuildingPetrifiedPawnStatue;
 
         static DefOfs()
         {
             DefOfHelper.EnsureInitializedInCtor(typeof(DefOfs));
+            DefOfHelper.EnsureInitializedInCtor(typeof(ThingDefOf));
         }
     }
 }

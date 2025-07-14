@@ -32,11 +32,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>..\..\..\HarmonyMod\Current\Assemblies\0Harmony.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\workshop\content\294100\2009463077\Current\Assemblies\0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PawnsOnDisplay">
+      <HintPath>..\..\..\..\..\..\workshop\content\294100\3446605621\1.6\Assemblies\PawnsOnDisplay.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -53,9 +57,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exterior\CompPetrifiedStatue.cs" />
+    <Compile Include="Exterior\Graphic_PetrifiedPawn.cs" />
     <Compile Include="Exterior\PawnInvisible.cs" />
     <Compile Include="Exterior\PetrificationExterior_old.cs" />
     <Compile Include="DefOfs.cs" />
+    <Compile Include="Exterior\PetrifiedPawnStatue.cs" />
+    <Compile Include="Exterior\PetrifiedPawnsTracker.cs" />
     <Compile Include="Hediffs\Hediff_StonePetrified.cs" />
     <Compile Include="VimPetrifyCore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -15,14 +15,12 @@ namespace Apflu.VimPetrify.Exterior
         [HarmonyPrefix]
         public static bool Prefix(PawnRenderer __instance, Pawn ___pawn) // Harmony 注入私有字段的语法
         {
-            // ___pawn 现在直接引用了 PawnRenderer 实例所对应的那个 Pawn
-            Pawn pawnToRender = ___pawn;
+            //Log.Message($"[VimPetrify] RenderPawnAt Prefix triggered for Pawn: {___pawn?.LabelCap ?? "N/A"}");
 
             // 检查 Pawn 是否处于石化状态
-            if (pawnToRender != null && pawnToRender.health != null && pawnToRender.health.hediffSet.HasHediff(DefOfs.StonePetrifiedHediff))
+            if (PetrifiedPawnsTracker.IsPawnPetrified(___pawn))
             {
-                // 如果是石化状态，则阻止原始 RenderPawnAt 方法的执行
-                return false;
+                return false; // 阻止渲染
             }
 
             return true;
