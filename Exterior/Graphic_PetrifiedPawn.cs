@@ -4,58 +4,56 @@ using System.IO; // For file operations if saving/loading textures
 using UnityEngine;
 using Verse;
 
-namespace Apflu.VimPetrify.Graphics
+namespace Apflu.VimPetrify.Exterior
 {
     // 自定义的Graphic类，用于渲染石化Pawn的雕像
     public class Graphic_PetrifiedPawn : Graphic_Single
     {
-        // 存储原始Pawn的引用，这样我们才能获取其外观
-        // 注意：这个Pawn不会被保存，因为它只是一个临时的引用，用于渲染
         // 实际的原始Pawn引用应该存储在BuildingPetrifiedPawnStatue的Comp中
         private Pawn originalPawnForRendering;
 
-        // 雕像的石材颜色，现在从GraphicData获取
-        // 我们会通过def.graphic.color来获取，或者使用默认值
         private Color stoneColor = new Color(0.5f, 0.5f, 0.5f); // 默认灰色
 
-        // 材质的路径，用于应用石材纹理 (此变量目前未使用，因为我们直接用颜色着色Pawn纹理)
-        // private string stoneTexturePath = "Things/Building/Linked/Rock_Smooth_Atlas"; 
 
-        // Init方法现在用于在Graphic被创建后立即设置关联的Pawn和颜色
-        // 它在Graphic实例化时或者从保存中加载时被调用
-        public void Init(Pawn pawn, Color? colorOverride = null)
+
+        public override void Init(GraphicRequest req)
+        {
+            base.Init(req);
+            if (data != null)
+            {
+                stoneColor = data.color; // 从GraphicData中获取颜色
+            }
+            // 输出Init结束时的this.mat
+            Log.Message($"[VimPetrify] Graphic_PetrifiedPawn.Init called. Initial stoneColor: {stoneColor}. Mat: {this.mat?.name ?? "null"}");
+        }
+
+        public void SetOriginalPawn(Pawn pawn, Color? colorOverride = null)
         {
             this.originalPawnForRendering = pawn;
             if (colorOverride.HasValue)
             {
                 this.stoneColor = colorOverride.Value;
             }
-            else
+            else if (this.data != null) // 确保this.data已设置
             {
-                // 从父类的GraphicData中获取颜色
-                // 注意：这里需要确保this.data已经通过Graphic.Init()方法设置
-                // Graphic.Init()会在Graphic被ThingDef加载时自动调用
-                if (this.data != null)
-                {
-                    this.stoneColor = this.data.color;
-                }
-                else
-                {
-                    Log.Warning($"[VimPetrify] Graphic_PetrifiedPawn: GraphicData is null during Init. Using default stone color.");
-                    this.stoneColor = new Color(0.5f, 0.5f, 0.5f); // fallback
-                }
+                this.stoneColor = this.data.color;
             }
 
-            // 清除旧的材质缓存，强制重新生成，以应用新的Pawn纹理和颜色
+            // 清除旧的材质缓存，强制重新生成
             this.mat = null;
+            _ = MatSingle; // 触发MatSingle的调用，确保材质被重新生成
+            Log.Message($"[VimPetrify] Graphic_PetrifiedPawn.SetOriginalPawn called for {pawn?.Name.ToStringShort ?? "N/A"}. Mat will be regenerated.");
+            Log.Message($"[VimPetrify] Graphic_PetrifiedPawn.SetOriginalPawn Mat: {this.mat?.name ?? "null"}");
         }
 
-        // 或更推荐的方式是：在BuildingPetrifiedPawnStatue的SpawnSetup和PostDraw中使用Init方法。
         // 重写MatSingle，生成最终用于渲染的材质
         public override Material MatSingle
         {
             get
             {
+                Log.Message("test");
+                Log.Message($"[VimPetrify] Graphic_PetrifiedPawn: MatSingle called for {this.data?.texPath ?? "unknown texture"} with originalPawnForRendering: {originalPawnForRendering?.Name.ToStringShort ?? "null"}");
+
                 if (mat == null)
                 {
                     // MatSingle在渲染时被调用。此时originalPawnForRendering必须已经设置。
@@ -66,7 +64,7 @@ namespace Apflu.VimPetrify.Graphics
                         // 如果originalPawnForRendering为空，我们只能返回一个通用的材质
                         // 可以选择返回一个默认的灰色方块材质，或者尝试使用def.graphic.texPath指定的纹理
                         MaterialRequest reqDefault = default(MaterialRequest);
-                        reqDefault.mainTex = ContentFinder<Texture2D>.Get(this.data.texPath, reportFailure: false);
+                        reqDefault.mainTex = ContentFinder<Texture2D>.Get(this.data.texPath, reportFailure: true);
                         if (reqDefault.mainTex == null) reqDefault.mainTex = BaseContent.BadTex; // Fallback to bad texture
                         reqDefault.shader = ShaderDatabase.Cutout;
                         reqDefault.color = this.stoneColor;
@@ -96,8 +94,23 @@ namespace Apflu.VimPetrify.Graphics
                         null, null, stylingStation: false, healthStateOverride
                     );
 
+                    if (pawnRenderTexture == null)
+                    {
+                        Log.Error($"[VimPetrify] Graphic_PetrifiedPawn: PortraitsCache.Get returned null for pawn {originalPawnForRendering.Name.ToStringShort}. Is the pawn valid?");
+                        // 返回一个可见的默认纹理，以便你看到它在游戏中显示
+                        MaterialRequest reqFallback = default(MaterialRequest);
+                        reqFallback.mainTex = ContentFinder<Texture2D>.Get(this.data.texPath, reportFailure: true);
+                        if (reqFallback.mainTex == null) reqFallback.mainTex = BaseContent.BadTex;
+                        reqFallback.shader = ShaderDatabase.Cutout;
+                        reqFallback.color = Color.magenta; // 用一个醒目的颜色
+                        reqFallback.colorTwo = Color.black;
+                        mat = MaterialPool.MatFrom(reqFallback);
+                        return mat;
+                    }
+
                     // 2. 将Pawn纹理灰度化并应用石材颜色
                     Texture2D finalTexture = null;
+                    Log.Message($"[VimPetrify] Graphic_PetrifiedPawn: Successfully got RenderTexture for pawn {originalPawnForRendering.Name.ToStringShort}. Processing texture...");
                     if (pawnRenderTexture != null)
                     {
                         RenderTexture.active = pawnRenderTexture;
@@ -130,7 +143,7 @@ namespace Apflu.VimPetrify.Graphics
                         Log.Error($"[VimPetrify] Graphic_PetrifiedPawn: Could not get RenderTexture for pawn {originalPawnForRendering.Name.ToStringShort}. Using default graphic.");
                         // 如果无法获取Pawn纹理，回退到默认
                         MaterialRequest reqFallback = default(MaterialRequest);
-                        reqFallback.mainTex = ContentFinder<Texture2D>.Get(this.data.texPath, reportFailure: false);
+                        reqFallback.mainTex = ContentFinder<Texture2D>.Get(this.data.texPath, reportFailure: true);
                         if (reqFallback.mainTex == null) reqFallback.mainTex = BaseContent.BadTex;
                         reqFallback.shader = ShaderDatabase.Cutout;
                         reqFallback.color = this.stoneColor;
@@ -139,6 +152,7 @@ namespace Apflu.VimPetrify.Graphics
                         return mat;
                     }
 
+                    Log.Message($"[VimPetrify] Graphic_PetrifiedPawn: Successfully processed texture for pawn {originalPawnForRendering.Name.ToStringShort}.");
                     // 3. 构建材质请求
                     MaterialRequest req = default(MaterialRequest);
                     req.mainTex = finalTexture;
@@ -156,6 +170,8 @@ namespace Apflu.VimPetrify.Graphics
         // 重写DrawWorker，确保每次绘制时MatSingle都能获取到正确的originalPawnForRendering
         public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
         {
+            Log.Message($"[VimPetrify] Graphic_PetrifiedPawn: DrawWorker called for {thing.LabelCap} at {loc} with rotation {rot}.");
+
             // 在这里获取thing，并尝试更新originalPawnForRendering
             // 这是确保MatSingle在获取材质时能够访问到正确Pawn的关键
             if (thing is BuildingPetrifiedPawnStatue statue && statue.PetrifiedComp != null)
@@ -164,7 +180,8 @@ namespace Apflu.VimPetrify.Graphics
                 // 这样可以确保MatSingle会重新生成材质
                 if (this.originalPawnForRendering != statue.PetrifiedComp.originalPawn || this.mat == null)
                 {
-                    Init(statue.PetrifiedComp.originalPawn, this.data.color); // 使用graphicData的颜色初始化
+                    Log.Message($"[VimPetrify] DrawWorker: Updating originalPawnForRendering to {statue.PetrifiedComp.originalPawn?.Name.ToStringShort ?? "NULL"}.");
+                    SetOriginalPawn(statue.PetrifiedComp.originalPawn, this.data.color); // 使用graphicData的颜色
                 }
             }
             else
