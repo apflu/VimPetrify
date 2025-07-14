@@ -1,5 +1,5 @@
 ﻿using Apflu.VimPetrify.Exterior;
-using PawnsOnDisplay;
+using PawnsOnDisplay; // Still used for texture management, keep it.
 using RimWorld;
 using System;
 using System.Collections.Generic;
@@ -13,79 +13,26 @@ namespace Apflu.VimPetrify.Hediffs
 {
     public class Hediff_StonePetrified : HediffWithComps
     {
-        private BuildingPetrifiedPawnStatue associatedStatue;
+        // 移除 private BuildingPetrifiedPawnStatue associatedStatue;
+        // 因为在打包场景下，这个引用可能变得不可靠。
+        // 我们改为在解除时动态查找。
 
+        // --- Public Overrides ---
         public override void PostAdd(DamageInfo? dinfo)
         {
             base.PostAdd(dinfo);
             Log.Message($"[VimPetrify] Hediff_StonePetrified added to Pawn: {pawn?.Name.ToStringShort ?? "N/A"}");
 
-            if (pawn == null || pawn.Dead) return; // 不检查 pawn.Map，因为我们就是要把它从地图上移除
+            if (pawn == null || pawn.Dead) return;
 
-            // 检查是否已经是雕像，避免重复处理
-            if (pawn.ParentHolder is BuildingPetrifiedPawnStatue existingStatue)
+            // Check if already petrified - this still uses pawn.ParentHolder for immediate check
+            if (CheckExistingStatueAssociation()) // This method might need slight adjustment, see below
             {
-                Log.Message($"[VimPetrify] Pawn {pawn.Name.ToStringShort} already associated with a statue. Skipping PostAdd actions.");
-                associatedStatue = existingStatue;
                 return;
             }
 
-            // 获取 Pawn 当前的位置和地图，用于生成雕像
-            Map currentMap = pawn.Map;
-            IntVec3 currentPosition = pawn.Position;
-            Rot4 currentRotation = pawn.Rotation; // 保存 Pawn 的朝向
-
-            // 关键步骤 1：将原始 Pawn 从地图上移除，但保留在内存中
-            // 这会阻止其被游戏系统（如救援警报、AI）识别
-            if (pawn.Spawned) // 只有当 Pawn 实际在地图上时才移除
-            {
-                pawn.DeSpawn(DestroyMode.Vanish); // 使用 Vanish 模式，Pawn 会被从地图上移除，但不销毁
-                Log.Message($"[VimPetrify] Pawn {pawn.Name.ToStringShort} Despawned for petrification.");
-            }
-            else
-            {
-                Log.Message($"[VimPetrify] Pawn {pawn.Name.ToStringShort} was not spawned on map, skipping despawn.");
-            }
-
-            // 关键步骤 2：实例化并放置石化雕像
-            BuildingPetrifiedPawnStatue statue = (BuildingPetrifiedPawnStatue)ThingMaker.MakeThing(DefOfs.BuildingPetrifiedPawnStatue);
-            if (statue == null)
-            {
-                Log.Error($"VimPetrify: Could not create BuildingPetrifiedPawnStatue for pawn {pawn.Name.ToStringShort}.");
-                return;
-            }
-
-            // 设置雕像的派系
-            statue.SetFaction(pawn.Faction);
-
-            // 获取 PawnsOnDisplay 纹理并保存
-            Texture2D[] pawnTextures = PawnsOnDisplayTextureManager.GetTexturesFromPawn(pawn, true, false);
-            string baseFileName = Statue_Util.SanitizeFilename(pawn.Name.ToStringShort);
-            string saveFolder = Statue_Util.GetMetadataSaveLocation();
-            PawnsOnDisplayTextureManager.SaveTextures(saveFolder, baseFileName, pawnTextures);
-
-            // 关键步骤 3：将原始 Pawn 引用传递给雕像组件
-            if (statue.PetrifiedComp != null)
-            {
-                statue.PetrifiedComp.originalPawn = pawn; // 将被 DeSpawn 的 Pawn 赋值给雕像组件
-                Log.Message($"[VimPetrify] Assigned originalPawn {pawn.Name.ToStringShort} to statue comp.");
-            }
-            else
-            {
-                Log.Error($"VimPetrify: Statue {statue.LabelCap} is missing CompPetrifiedPawnStatue!");
-            }
-
-            // 生成雕像到之前 Pawn 的位置和朝向
-            if (currentMap != null) // 确保有地图才能生成
-            {
-                GenSpawn.Spawn(statue, currentPosition, currentMap, currentRotation);
-                associatedStatue = statue; // 存储对创建的雕像的引用
-                Log.Message($"[VimPetrify] Spawned statue {statue.LabelCap} at {currentPosition} on map {currentMap.info.parent.Label}.");
-            }
-            else
-            {
-                Log.Error($"VimPetrify: Cannot spawn statue for {pawn.Name.ToStringShort} because currentMap is null. Pawn was likely not on a map.");
-            }
+            // Perform petrification
+            PerformPetrification();
         }
 
         public override void PostRemoved()
@@ -96,65 +43,339 @@ namespace Apflu.VimPetrify.Hediffs
 
             Log.Message($"[VimPetrify] Hediff_StonePetrified removed from Pawn: {pawn.Name.ToStringShort}.");
 
-            // 关键步骤 1：如果雕像存在且 Pawn 仍在雕像中，则将 Pawn 重新生成到地图上
-            if (associatedStatue != null && associatedStatue.PetrifiedComp?.originalPawn == pawn)
-            {
-                Map statueMap = associatedStatue.Map;
-                IntVec3 statuePosition = associatedStatue.Position;
-                Rot4 statueRotation = associatedStatue.Rotation;
-
-                // 重新生成 Pawn 到地图上
-                if (statueMap != null && !pawn.Spawned) // 只有 Pawn 没在地图上时才重新生成
-                {
-                    GenSpawn.Spawn(pawn, statuePosition, statueMap, statueRotation);
-                    Log.Message($"[VimPetrify] Pawn {pawn.Name.ToStringShort} respawned from statue at {statuePosition} on map {statueMap.info.parent.Label}.");
-
-                    // 强制 Pawn 渲染刷新，使其可见
-                    pawn.Drawer.renderer.SetAllGraphicsDirty();
-                }
-                else
-                {
-                    Log.Warning($"[VimPetrify] Attempted to respawn Pawn {pawn.Name.ToStringShort}, but map is null or Pawn is already spawned.");
-                }
-
-                // 关键步骤 2：移除关联的石化雕像
-                if (associatedStatue.Spawned)
-                {
-                    associatedStatue.Destroy();
-                    Log.Message($"[VimPetrify] Statue {associatedStatue.LabelCap} destroyed upon pawn de-petrification.");
-                }
-                associatedStatue = null; // 清除引用
-            }
-            else // 如果 associatedStatue 引用丢失，或者 Pawn 不在雕像中
-            {
-                Log.Warning($"[VimPetrify] associatedStatue is null or originalPawn mismatch for {pawn.Name.ToStringShort}. Attempting fallback removal.");
-                // 尝试在 Pawn 位置查找并移除（如果 Pawn 仍在雕像中，但引用丢失）
-                // 仅在 Pawn 没有重新生成时才尝试此逻辑，以防万一
-                if (!pawn.Spawned && pawn.Position.IsValid && pawn.Map != null) // 检查 Pawn 的位置和地图是否仍然有效
-                {
-                    foreach (Thing thing in pawn.Map.thingGrid.ThingsAt(pawn.Position))
-                    {
-                        if (thing is BuildingPetrifiedPawnStatue s && s.PetrifiedComp?.originalPawn == pawn)
-                        {
-                            s.Destroy();
-                            Log.Message($"[VimPetrify] Fallback: Found and destroyed statue {s.LabelCap} at pawn's position.");
-                            break;
-                        }
-                    }
-                }
-
-                // 如果Pawn因为某种原因没有被Spawn，确保它被重新激活可见
-                if (pawn.Spawned)
-                {
-                    pawn.Drawer.renderer.SetAllGraphicsDirty();
-                }
-            }
+            // Perform de-petrification
+            PerformDePetrification();
         }
 
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_References.Look(ref associatedStatue, "associatedStatue");
+            // associatedStatue 不再需要持久化，因为我们是动态查找的
+            // 如果你想保留它作为一种优化或调试信息，可以保留 Scribe_References.Look(ref associatedStatue, "associatedStatue");
+            // 但为了支持打包移动，它不再是解除石化时的主要查找方式。
+        }
+
+        // --- Private Helper Methods for PostAdd ---
+
+        /// <summary>
+        /// Checks if the pawn is already associated with a statue (either deployed or minified) and should not be re-petrified.
+        /// </summary>
+        /// <returns>True if already associated and actions should be skipped, false otherwise.</returns>
+        private bool CheckExistingStatueAssociation()
+        {
+            // If the pawn is already stored inside a BuildingPetrifiedPawnStatue
+            if (pawn.ParentHolder is BuildingPetrifiedPawnStatue existingBuildingStatue)
+            {
+                Log.Message($"[VimPetrify] Pawn {pawn.Name.ToStringShort} is already inside a deployed statue.");
+                // We'll trust that the existing statue has the correct pawn reference.
+                return true;
+            }
+            // If the pawn is already stored inside a MinifiedPetrifiedPawnStatue (i.e., packed)
+            if (pawn.ParentHolder is MinifiedThing minifiedStatue && minifiedStatue.InnerThing is BuildingPetrifiedPawnStatue innerBuildingStatue)
+            {
+                // Check if the minified thing is actually OUR statue with this pawn
+                if (innerBuildingStatue.PetrifiedComp?.originalPawn == pawn)
+                {
+                    Log.Message($"[VimPetrify] Pawn {pawn.Name.ToStringShort} is already inside a minified statue.");
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Handles the main logic for petrifying the pawn and creating the statue.
+        /// </summary>
+        private void PerformPetrification()
+        {
+            Map currentMap = pawn.Map;
+            IntVec3 currentPosition = pawn.Position;
+            Rot4 currentRotation = pawn.Rotation;
+
+            DespawnOriginalPawn(); // Pawn is despawned, but still in memory
+
+            BuildingPetrifiedPawnStatue newStatue = CreateAndSetupStatue();
+            if (newStatue == null) return;
+
+            GenerateAndSavePawnTexture(pawn);
+
+            // IMPORTANT: Assign original pawn to statue component FIRST
+            if (newStatue.PetrifiedComp != null)
+            {
+                newStatue.PetrifiedComp.originalPawn = pawn;
+                Log.Message($"[VimPetrify] Assigned originalPawn {pawn.Name.ToStringShort} to statue comp.");
+            }
+            else
+            {
+                Log.Error($"VimPetrify: Statue {newStatue.LabelCap} is missing CompPetrifiedPawnStatue!");
+            }
+
+            // Then spawn the statue
+            SpawnStatue(newStatue, currentMap, currentPosition, currentRotation);
+        }
+
+        private void DespawnOriginalPawn()
+        {
+            if (pawn.Spawned)
+            {
+                pawn.DeSpawn(DestroyMode.Vanish);
+                Log.Message($"[VimPetrify] Pawn {pawn.Name.ToStringShort} Despawned for petrification.");
+            }
+            else
+            {
+                Log.Message($"[VimPetrify] Pawn {pawn.Name.ToStringShort} was not spawned on map, skipping despawn.");
+            }
+        }
+
+        private BuildingPetrifiedPawnStatue CreateAndSetupStatue()
+        {
+            BuildingPetrifiedPawnStatue statue = (BuildingPetrifiedPawnStatue)ThingMaker.MakeThing(DefOfs.BuildingPetrifiedPawnStatue);
+            if (statue == null)
+            {
+                Log.Error($"VimPetrify: Could not create BuildingPetrifiedPawnStatue for pawn {pawn.Name.ToStringShort}.");
+            }
+            else
+            {
+                statue.SetFaction(pawn.Faction);
+            }
+            return statue;
+        }
+
+        private void GenerateAndSavePawnTexture(Pawn targetPawn)
+        {
+            try
+            {
+                Texture2D[] pawnTextures = PawnsOnDisplayTextureManager.GetTexturesFromPawn(targetPawn, true, false);
+                string baseFileName = Statue_Util.SanitizeFilename(targetPawn.Name.ToStringShort);
+                string saveFolder = Statue_Util.GetMetadataSaveLocation();
+                PawnsOnDisplayTextureManager.SaveTextures(saveFolder, baseFileName, pawnTextures);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[VimPetrify] Failed to generate/save pawn texture for {targetPawn.Name.ToStringShort}: {ex.Message}");
+            }
+        }
+
+        private void SpawnStatue(BuildingPetrifiedPawnStatue statue, Map map, IntVec3 position, Rot4 rotation)
+        {
+            if (map != null)
+            {
+                GenSpawn.Spawn(statue, position, map, rotation);
+                // associatedStatue = statue; // This field is no longer strictly needed for de-petrification if we find dynamically
+                Log.Message($"[VimPetrify] Spawned statue {statue.LabelCap} at {position} on map {map.info.parent.Label}.");
+            }
+            else
+            {
+                Log.Error($"VimPetrify: Cannot spawn statue for {pawn.Name.ToStringShort} because map is null. Pawn was likely not on a map.");
+            }
+        }
+
+        // --- Private Helper Methods for PostRemoved ---
+
+        /// <summary>
+        /// Handles the main logic for de-petrifying the pawn and removing the statue.
+        /// </summary>
+        private void PerformDePetrification()
+        {
+            // Step 1: Find the associated statue (either deployed or minified)
+            Thing associatedThing = FindAssociatedStatue();
+
+            if (associatedThing != null)
+            {
+                RespawnPawnAndDestroyStatue(associatedThing);
+            }
+            else
+            {
+                // If no statue found, try to respawn pawn at its last known position (if valid)
+                HandleNoStatueFound();
+            }
+        }
+
+        /// <summary>
+        /// Finds the BuildingPetrifiedPawnStatue or MinifiedPetrifiedPawnStatue associated with this pawn.
+        /// </summary>
+        /// <returns>The found statue (Building or MinifiedThing), or null if not found.</returns>
+        private Thing FindAssociatedStatue()
+        {
+            // First, check if the pawn is currently held by a statue (should be despawned and held by the statue)
+            // This is the most reliable way if the pawn is still tied to a specific statue instance in memory.
+            if (pawn.ParentHolder is BuildingPetrifiedPawnStatue directBuildingStatue && directBuildingStatue.PetrifiedComp?.originalPawn == pawn)
+            {
+                Log.Message($"[VimPetrify] Found associated building statue directly for {pawn.Name.ToStringShort}.");
+                return directBuildingStatue;
+            }
+            if (pawn.ParentHolder is MinifiedThing directMinifiedStatue && directMinifiedStatue.InnerThing is BuildingPetrifiedPawnStatue innerBuilding && innerBuilding.PetrifiedComp?.originalPawn == pawn)
+            {
+                Log.Message($"[VimPetrify] Found associated minified statue directly for {pawn.Name.ToStringShort}.");
+                return directMinifiedStatue;
+            }
+
+
+            // Fallback: Iterate through all spawned BuildingPetrifiedPawnStatue and MinifiedPetrifiedPawnStatue
+            // across all maps and in storage (if any). This is more resource-intensive but robust.
+
+            // Search for deployed buildings on all maps
+            foreach (Map map in Find.Maps)
+            {
+                foreach (Thing thing in map.listerThings.ThingsOfDef(DefOfs.BuildingPetrifiedPawnStatue))
+                {
+                    if (thing is BuildingPetrifiedPawnStatue deployedStatue && deployedStatue.PetrifiedComp?.originalPawn == pawn)
+                    {
+                        Log.Message($"[VimPetrify] Found associated deployed statue {deployedStatue.LabelCap} on map {map.info.parent.Label} for {pawn.Name.ToStringShort}.");
+                        return deployedStatue;
+                    }
+                }
+            }
+
+            // Search for minified statues across all maps (in storage, inventory, etc.)
+            foreach (Map map in Find.Maps)
+            {
+                foreach (Thing thing in map.listerThings.ThingsOfDef(DefOfs.MinifiedPetrifiedPawnStatue))
+                {
+                    if (thing is MinifiedThing minifiedThing)
+                    {
+                        if (minifiedThing.InnerThing is BuildingPetrifiedPawnStatue innerStatue && innerStatue.PetrifiedComp?.originalPawn == pawn)
+                        {
+                            Log.Message($"[VimPetrify] Found associated minified statue {minifiedThing.LabelCap} on map {map.info.parent.Label} for {pawn.Name.ToStringShort}.");
+                            return minifiedThing;
+                        }
+                    }
+                }
+            }
+
+            // Finally, search through all existing Things in the game (more expensive, last resort)
+            // Not usually necessary if Pawn.ParentHolder is properly managed or map searches cover it.
+            // foreach (Thing thing in Find.World.GetComponent<WorldPawns>().AllPawnsAliveOrDead().OfType<MinifiedThing>()) { ... } // Example if pawns are in minified things in world
+            // Consider if the statue could be in pawn's inventory (unlikely for buildings) or somewhere else.
+
+            Log.Warning($"[VimPetrify] Could not find any associated statue for pawn {pawn.Name.ToStringShort}.");
+            return null;
+        }
+
+
+        /// <summary>
+        /// Respawns the pawn from the given associated statue (either Building or MinifiedThing) and destroys the statue.
+        /// </summary>
+        /// <param name="foundStatue">The statue (Building or MinifiedThing) that was found.</param>
+        private void RespawnPawnAndDestroyStatue(Thing foundStatue)
+        {
+            Map respawnMap = null;
+            IntVec3 respawnPosition = IntVec3.Invalid;
+            Rot4 respawnRotation = Rot4.North;
+
+            // 用于存储被销毁的部署雕像实例
+            BuildingPetrifiedPawnStatue deployedStatueToDestroy = null;
+
+            if (foundStatue is BuildingPetrifiedPawnStatue deployedStatue) // 这里声明的 deployedStatue 只在此if块内有效
+            {
+                // 将内部声明的 deployedStatue 赋值给外部变量，以便后续销毁
+                deployedStatueToDestroy = deployedStatue;
+                respawnMap = deployedStatue.Map;
+                respawnPosition = deployedStatue.Position;
+                respawnRotation = deployedStatue.Rotation;
+                Log.Message($"[VimPetrify] De-petrifying from DEPLOYED statue at {respawnPosition} on map {respawnMap?.info.parent.Label}.");
+            }
+            else if (foundStatue is MinifiedThing minifiedStatue)
+            {
+                // 如果是打包物品，我们假设它内部的 BuildingPetrifiedPawnStatue 实例是有效的。
+                // 此时，pawn应该是在minifiedStatue.InnerThing中。
+                BuildingPetrifiedPawnStatue innerStatue = minifiedStatue.InnerThing as BuildingPetrifiedPawnStatue;
+
+                if (innerStatue == null)
+                {
+                    Log.Error($"[VimPetrify] Minified statue {minifiedStatue.LabelCap} does not contain a BuildingPetrifiedPawnStatue inner thing.");
+                    return; // 内部物品类型不符，中止操作
+                }
+
+                if (minifiedStatue.Map != null)
+                {
+                    respawnMap = minifiedStatue.Map;
+                    respawnPosition = minifiedStatue.Position; // Respawn at minified item's position
+                    respawnRotation = Rot4.North; // Default rotation for respawned pawn
+                    Log.Message($"[VimPetrify] De-petrifying from MINIFIED statue at {respawnPosition} on map {respawnMap.info.parent.Label}.");
+
+                    // 销毁 MinifiedThing 本身，它会包含内部的 BuildingPetrifiedPawnStatue
+                    minifiedStatue.Destroy();
+                    Log.Message($"[VimPetrify] Minified statue {minifiedStatue.LabelCap} destroyed upon pawn de-petrification.");
+                }
+                else // If minified statue is in inventory, or not on a map (e.g. caravan)
+                {
+                    Log.Error($"[VimPetrify] Minified statue {minifiedStatue.LabelCap} is not on a map. Cannot respawn pawn {pawn.Name.ToStringShort}. Pawn is lost!");
+                    // 在此情况下，由于无法确定安全的生成位置，我们选择直接返回
+                    // 你可以在此处添加更复杂的逻辑，例如在最近的殖民地地图生成，或弹出警告让玩家手动处理。
+                    return;
+                }
+            }
+            else
+            {
+                Log.Error($"[VimPetrify] Unknown statue type ({foundStatue.GetType().Name}) found for de-petrification of {pawn.Name.ToStringShort}.");
+                return;
+            }
+
+            // Respawn Pawn if not already spawned
+            if (respawnMap != null && !pawn.Spawned)
+            {
+                IntVec3 spawnCell = CellFinder.StandableCellNear(respawnPosition, respawnMap, 5);
+                if (spawnCell.IsValid)
+                {
+                    GenSpawn.Spawn(pawn, spawnCell, respawnMap, respawnRotation);
+                    Log.Message($"[VimPetrify] Pawn {pawn.Name.ToStringShort} respawned from statue at {spawnCell} (near {respawnPosition}) on map {respawnMap.info.parent.Label}.");
+                    pawn.Drawer.renderer.SetAllGraphicsDirty();
+                }
+                else
+                {
+                    Log.Error($"[VimPetrify] Could not find a standable cell near {respawnPosition} on map {respawnMap.info.parent.Label} to respawn pawn {pawn.Name.ToStringShort}. Pawn is lost!");
+                }
+            }
+            else
+            {
+                Log.Warning($"[VimPetrify] Attempted to respawn Pawn {pawn.Name.ToStringShort}, but map is null or Pawn is already spawned.");
+            }
+
+            // 在这里统一销毁部署状态的雕像
+            if (deployedStatueToDestroy != null && deployedStatueToDestroy.Spawned)
+            {
+                deployedStatueToDestroy.Destroy();
+                Log.Message($"[VimPetrify] Deployed statue {deployedStatueToDestroy.LabelCap} destroyed upon pawn de-petrification.");
+            }
+        }
+
+
+        /// <summary>
+        /// Handles the scenario where no associated statue is found during de-petrification.
+        /// </summary>
+        private void HandleNoStatueFound()
+        {
+            Log.Warning($"[VimPetrify] No associated statue found for {pawn.Name.ToStringShort} during de-petrification. Attempting to respawn at pawn's last known position.");
+
+            // Try to respawn the pawn at its last known valid position (might be where it was despawned)
+            if (!pawn.Spawned && pawn.Position.IsValid && pawn.Map != null) // Check if pawn is still despawned and has a valid map/position
+            {
+                IntVec3 respawnPos = pawn.Position;
+                Map respawnMap = pawn.Map;
+
+                // Try to find a standable cell. If original position is invalid, this will help.
+                IntVec3 spawnCell = CellFinder.StandableCellNear(respawnPos, respawnMap, 5);
+                if (spawnCell.IsValid)
+                {
+                    GenSpawn.Spawn(pawn, spawnCell, respawnMap, Rot4.North); // Default rotation
+                    Log.Message($"[VimPetrify] Fallback: Pawn {pawn.Name.ToStringShort} respawned at {spawnCell} (last valid position) after statue not found.");
+                    pawn.Drawer.renderer.SetAllGraphicsDirty();
+                }
+                else
+                {
+                    Log.Error($"[VimPetrify] Fallback: Could not find standable cell for {pawn.Name.ToStringShort} at {respawnPos} on map {respawnMap.info.parent.Label}. Pawn is LOST!");
+                }
+            }
+            else if (pawn.Spawned) // If pawn somehow became spawned already (e.g. from a bug or another mod)
+            {
+                pawn.Drawer.renderer.SetAllGraphicsDirty();
+                Log.Message($"[VimPetrify] Pawn {pawn.Name.ToStringShort} was already spawned. Forcing graphics refresh.");
+            }
+            else
+            {
+                Log.Error($"[VimPetrify] Pawn {pawn.Name.ToStringShort} is neither spawned nor associated with a statue, and has no valid last position to respawn. Pawn is LOST!");
+            }
         }
     }
 }
