@@ -12,7 +12,7 @@ namespace Apflu.VimPetrify.Patches
         public static bool Prefix(Pawn p, ref bool __result)
         {
             // 检查 Pawn 是否有你的石化 Hediff
-            if (p != null && p.health != null && p.health.hediffSet.HasHediff(DefOfs.StonePetrifiedHediff))
+            if (p != null && p.health != null && p.health.hediffSet.HasHediff(DefOfs.PetrifiedFull))
             {
                 __result = false; // 如果被石化，则不认为需要救援
                 return false;     // 跳过原始 NeedsRescue 方法的执行

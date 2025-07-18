@@ -15,7 +15,7 @@ namespace Apflu.VimPetrify
         {
             Log.Message($"[VimPetrify] GraphicsFor Postfix triggered for Pawn: {pawn?.LabelCap ?? "N/A"} - Node Type: {__instance.GetType().Name}");
 
-            if (pawn == null || !pawn.health.hediffSet.HasHediff(DefOfs.StonePetrifiedHediff))
+            if (pawn == null || !pawn.health.hediffSet.HasHediff(DefOfs.PetrifiedFull))
             {
                 return;
             }

@@ -11,7 +11,7 @@ namespace Apflu.VimPetrify
     [DefOf]
     public static class DefOfs
     {
-        public static HediffDef StonePetrifiedHediff;
+        public static HediffDef PetrifiedFull;
         public static ThingDef BuildingPetrifiedPawnStatue;
         public static ThingDef MinifiedPetrifiedPawnStatue;
 

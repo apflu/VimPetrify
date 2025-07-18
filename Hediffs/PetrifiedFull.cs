@@ -11,40 +11,41 @@ using Verse;
 
 namespace Apflu.VimPetrify.Hediffs
 {
-    public class Hediff_StonePetrified : HediffWithComps
+    public class PetrifiedFull : HediffWithComps
     {
-        // 移除 private BuildingPetrifiedPawnStatue associatedStatue;
-        // 因为在打包场景下，这个引用可能变得不可靠。
-        // 我们改为在解除时动态查找。
 
         // --- Public Overrides ---
         public override void PostAdd(DamageInfo? dinfo)
         {
             base.PostAdd(dinfo);
-            Log.Message($"[VimPetrify] Hediff_StonePetrified added to Pawn: {pawn?.Name.ToStringShort ?? "N/A"}");
-
-            if (pawn == null || pawn.Dead) return;
-
-            // Check if already petrified - this still uses pawn.ParentHolder for immediate check
-            if (CheckExistingStatueAssociation()) // This method might need slight adjustment, see below
+            if (def == DefOfs.PetrifiedFull)
             {
-                return;
-            }
+                Log.Message($"[VimPetrify] PetrifiedFull added to Pawn: {pawn?.Name.ToStringShort ?? "N/A"}");
 
-            // Perform petrification
-            PerformPetrification();
+                if (pawn == null || pawn.Dead) return;
+
+                if (CheckExistingStatueAssociation())
+                {
+                    return;
+                }
+
+                PerformPetrification();
+            }
         }
 
         public override void PostRemoved()
         {
             base.PostRemoved();
 
-            if (pawn == null) return;
+            if (def == DefOfs.PetrifiedFull)
+            {
+                if (pawn == null) return;
 
-            Log.Message($"[VimPetrify] Hediff_StonePetrified removed from Pawn: {pawn.Name.ToStringShort}.");
+                Log.Message($"[VimPetrify] PetrifiedFull removed from Pawn: {pawn.Name.ToStringShort}.");
 
-            // Perform de-petrification
-            PerformDePetrification();
+                // Perform de-petrification
+                PerformDePetrification();
+            }
         }
 
         public override void ExposeData()

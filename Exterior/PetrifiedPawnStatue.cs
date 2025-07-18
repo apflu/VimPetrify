@@ -55,7 +55,7 @@ namespace Apflu.VimPetrify.Exterior
                 {
                     defaultLabel = "CommandViewPawnInfo".Translate(), // 使用翻译键更通用
                     defaultDesc = "CommandViewPawnInfoDesc".Translate(),
-                    icon = ContentFinder<Texture2D>.Get("VimPetrify/UI/CharityQuestIcon"),
+                    icon = ContentFinder<Texture2D>.Get("UI/Icons/Language"),
                     action = delegate
                     {
                         // 核心：直接调用 RimWorld 的信息卡片系统
