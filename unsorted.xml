@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScenarioDef ParentName="ScenarioBase">
+    <defName>LoneStatue</defName>
+    <label>孤独雕像</label>
+    <description>你喝下石化药水，偷偷将自己伪装成一座雕像，将自己如同一件真正的货物一样邮寄到边缘世界。在飞船的货仓里，你连一根手指也动不了；作为一件货物，你甚至不需要低温休眠仓。
+被从头到脚趾石化，你却保持着完整的触感，等待着被遗弃到边缘世界的未知地点。
+
+货仓里满载着物资。几个机器人在黑暗中休眠，
+
+注意：你可能忘了提前喝下复原药水…w
+如果长满青苔、变成遗迹的一部分的话，可是会变成别人的财产的哦。
+        
+    </description>
+    <summary>一名寻求刺激的探险家将自己邮寄到了边缘世界。</summary>
+</ScenarioDef>

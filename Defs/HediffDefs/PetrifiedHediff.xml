@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+    <HediffDef Name="PetrifiedBase" Abstract="True">
+        <hediffClass>Apflu.VimPetrify.Hediffs.PetrifiedFull</hediffClass>
+        <description>This pawn has been turned into an immobile statue. They are fully aware of
+            their surroundings but are unable to move or interact with anything.</description>
+        <initialSeverity>1.0</initialSeverity>
+        <maxSeverity>1.0</maxSeverity>
+        <isBad>false</isBad>
+        <minSeverity>0</minSeverity>
+
+        <makesAlert>false</makesAlert>
+        <makesSickThought>false</makesSickThought>
+
+        <defaultLabelColor>(0.4, 0.4, 0.4)</defaultLabelColor>
+    </HediffDef>
+
+    <HediffDef ParentName="PetrifiedBase">
+        <defName>PetrifiedFull</defName>
+        <label>stone petrified</label>
+        <description>This pawn is turning to solid stone.</description>
+        <preventsDeath>true</preventsDeath>
+        <stages>
+            <li>
+                <label>solidified</label>
+                <partEfficiencyOffset>-2.0</partEfficiencyOffset>
+                <capMods>
+                    <li>
+                        <capacity>Moving</capacity>
+                        <offset>-1.0</offset>
+                    </li>
+                    <li>
+                        <capacity>Manipulation</capacity>
+                        <offset>-1.0</offset>
+                    </li>
+                    <li>
+                        <capacity>Eating</capacity>
+                        <offset>-1.0</offset>
+                    </li>
+                </capMods>
+                <statOffsets>
+                    <PsychicSensitivity>-1.0</PsychicSensitivity>
+                    <PainShockThreshold>1.0</PainShockThreshold>
+                    <SocialImpact>-1.0</SocialImpact>
+                    <TradePriceImprovement>-1.0</TradePriceImprovement>
+                </statOffsets>
+            </li>
+        </stages>
+        <!--comps>
+            <li Class="Apflu.VimPetrify.HediffComps.HediffComp_FullPetrificationWatcher" />
+        </comps-->
+    </HediffDef>
+
+</Defs>

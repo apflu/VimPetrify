@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+    <packageId>Apflu.VimPetrify</packageId>
+    <name>Petrify Alchemist</name>
+    <author>apflu</author>
+    <description>* Warning: ASFR or other sensitive content may include.
+Make use of petrification potion to satisfy customer needs, or their dark desires.
+    </description>
+    <supportedVersions>
+        <li>1.6</li>
+    </supportedVersions>
+
+    <modDependencies>
+        <li>
+            <packageId>brrainz.harmony</packageId>
+            <displayName>Harmony</displayName>
+            <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+        </li>
+        <li>
+            <packageId>nawjak.pawnsondisplay</packageId>
+            <displayName>Pawns on Display</displayName>
+            <steamWorkshopUrl>steam://url/CommunityFilePage/3446605621</steamWorkshopUrl>
+        </li>
+    </modDependencies>
+</ModMetaData>
