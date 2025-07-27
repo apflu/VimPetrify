@@ -45,7 +45,7 @@ namespace Apflu.VimPetrify
                 //     Log.Message($"[VimPetrify]   Material is null for graphic path: {originalGraphic.path}.");
                 // }
             }
-            __result = graphicsToModify.AsEnumerable(); // 推荐保留此行，确保修改被返回
+            __result = graphicsToModify.AsEnumerable(); 
         }
 
         private static void SetMaterialToGray(Material mat)

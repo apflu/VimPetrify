@@ -17,10 +17,10 @@ namespace Apflu.VimPetrify.Exterior
         {
             //Log.Message($"[VimPetrify] RenderPawnAt Prefix triggered for Pawn: {___pawn?.LabelCap ?? "N/A"}");
 
-            // 检查 Pawn 是否处于石化状态
+           
             if (PetrifiedPawnsTracker.IsPawnPetrified(___pawn))
             {
-                return false; // 阻止渲染
+                return false;
             }
 
             return true;

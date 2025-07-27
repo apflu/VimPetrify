@@ -51,9 +51,6 @@ namespace Apflu.VimPetrify.Hediffs
         public override void ExposeData()
         {
             base.ExposeData();
-            // associatedStatue 不再需要持久化，因为我们是动态查找的
-            // 如果你想保留它作为一种优化或调试信息，可以保留 Scribe_References.Look(ref associatedStatue, "associatedStatue");
-            // 但为了支持打包移动，它不再是解除石化时的主要查找方式。
         }
 
         // --- Private Helper Methods for PostAdd ---
@@ -264,12 +261,10 @@ namespace Apflu.VimPetrify.Hediffs
             IntVec3 respawnPosition = IntVec3.Invalid;
             Rot4 respawnRotation = Rot4.North;
 
-            // 用于存储被销毁的部署雕像实例
             BuildingPetrifiedPawnStatue deployedStatueToDestroy = null;
 
-            if (foundStatue is BuildingPetrifiedPawnStatue deployedStatue) // 这里声明的 deployedStatue 只在此if块内有效
+            if (foundStatue is BuildingPetrifiedPawnStatue deployedStatue)
             {
-                // 将内部声明的 deployedStatue 赋值给外部变量，以便后续销毁
                 deployedStatueToDestroy = deployedStatue;
                 respawnMap = deployedStatue.Map;
                 respawnPosition = deployedStatue.Position;
@@ -278,14 +273,12 @@ namespace Apflu.VimPetrify.Hediffs
             }
             else if (foundStatue is MinifiedThing minifiedStatue)
             {
-                // 如果是打包物品，我们假设它内部的 BuildingPetrifiedPawnStatue 实例是有效的。
-                // 此时，pawn应该是在minifiedStatue.InnerThing中。
                 BuildingPetrifiedPawnStatue innerStatue = minifiedStatue.InnerThing as BuildingPetrifiedPawnStatue;
 
                 if (innerStatue == null)
                 {
                     Log.Error($"[VimPetrify] Minified statue {minifiedStatue.LabelCap} does not contain a BuildingPetrifiedPawnStatue inner thing.");
-                    return; // 内部物品类型不符，中止操作
+                    return;
                 }
 
                 if (minifiedStatue.Map != null)
@@ -295,15 +288,13 @@ namespace Apflu.VimPetrify.Hediffs
                     respawnRotation = Rot4.North; // Default rotation for respawned pawn
                     Log.Message($"[VimPetrify] De-petrifying from MINIFIED statue at {respawnPosition} on map {respawnMap.info.parent.Label}.");
 
-                    // 销毁 MinifiedThing 本身，它会包含内部的 BuildingPetrifiedPawnStatue
+                    
                     minifiedStatue.Destroy();
                     Log.Message($"[VimPetrify] Minified statue {minifiedStatue.LabelCap} destroyed upon pawn de-petrification.");
                 }
                 else // If minified statue is in inventory, or not on a map (e.g. caravan)
                 {
                     Log.Error($"[VimPetrify] Minified statue {minifiedStatue.LabelCap} is not on a map. Cannot respawn pawn {pawn.Name.ToStringShort}. Pawn is lost!");
-                    // 在此情况下，由于无法确定安全的生成位置，我们选择直接返回
-                    // 你可以在此处添加更复杂的逻辑，例如在最近的殖民地地图生成，或弹出警告让玩家手动处理。
                     return;
                 }
             }
@@ -333,7 +324,7 @@ namespace Apflu.VimPetrify.Hediffs
                 Log.Warning($"[VimPetrify] Attempted to respawn Pawn {pawn.Name.ToStringShort}, but map is null or Pawn is already spawned.");
             }
 
-            // 在这里统一销毁部署状态的雕像
+            // despawn here
             if (deployedStatueToDestroy != null && deployedStatueToDestroy.Spawned)
             {
                 deployedStatueToDestroy.Destroy();

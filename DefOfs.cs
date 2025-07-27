@@ -20,4 +20,4 @@ namespace Apflu.VimPetrify
             DefOfHelper.EnsureInitializedInCtor(typeof(DefOfs));
         }
     }
-}
+} 
