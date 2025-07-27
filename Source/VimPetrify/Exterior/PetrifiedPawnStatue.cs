@@ -1,6 +1,8 @@
 ﻿using RimWorld;
-using Verse;
+using System.Collections.Generic;
 using UnityEngine;
+using Verse;
+using Verse.AI;
 
 namespace Apflu.VimPetrify.Exterior
 {
@@ -13,15 +15,6 @@ namespace Apflu.VimPetrify.Exterior
             base.SpawnSetup(map, respawningAfterLoad);
 
             Log.Message($"[VimPetrify] BuildingPetrifiedPawnStatue.SpawnSetup called. Respawning: {respawningAfterLoad}");
-
-            if (this.Graphic != null)
-            {
-                Log.Message($"[VimPetrify] Statue graphic type in SpawnSetup: {this.Graphic.GetType().Name}.");
-            }
-            else
-            {
-                Log.Error($"[VimPetrify] Statue graphic is NULL in SpawnSetup!");
-            }
 
             if (Graphic is Graphic_PetrifiedPawn petrifiedGraphic)
             {
@@ -38,13 +31,34 @@ namespace Apflu.VimPetrify.Exterior
             else
             {
                 Log.Warning($"[VimPetrify] BuildingPetrifiedPawnStatue.SpawnSetup: Graphic is not Graphic_PetrifiedPawn type. Actual type: {Graphic?.GetType().Name ?? "NULL"}.");
-                // 如果这里显示的是Graphic_Single或者其他类型，那么问题就在于XML的配置或类的加载
             }
         }
 
         public override void ExposeData()
         {
             base.ExposeData();
+        }
+
+        public override IEnumerable<Gizmo> GetGizmos()
+        {
+            foreach (Gizmo gizmo in base.GetGizmos())
+            {
+                yield return gizmo;
+            }
+
+            if (PetrifiedComp != null && PetrifiedComp.originalPawn != null)
+            {
+                yield return new Command_Action
+                {
+                    defaultLabel = "CommandViewPawnInfo".Translate(),
+                    defaultDesc = "CommandViewPawnInfoDesc".Translate(),
+                    icon = ContentFinder<Texture2D>.Get("UI/Icons/Language"),
+                    action = delegate
+                    {
+                        Find.WindowStack.Add(new Dialog_InfoCard(PetrifiedComp.originalPawn));
+                    }
+                };
+            }
         }
     }
 }

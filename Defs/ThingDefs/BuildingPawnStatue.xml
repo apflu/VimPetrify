@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <ThingDef ParentName="SculptureBase">
+    <defName>BuildingPetrifiedPawnStatue</defName>
+    <label>petrified statue</label>
+    <description>A former pawn, now turned to stone. It still holds the essence of who they oncewere.</description>
+    <thingClass>Apflu.VimPetrify.Exterior.BuildingPetrifiedPawnStatue</thingClass>
+    <category>Building</category>
+    <!--graphicData>
+      <graphicClass>Apflu.VimPetrify.Exterior.Graphic_PetrifiedPawn</graphicClass>
+      <texPath>VimPetrify/Placeholder/placeholder</texPath>
+      <shaderType>Cutout</shaderType>
+      <drawSize>(1,1)</drawSize>
+    </graphicData-->
+    <graphicData>
+      <graphicClass>Graphic_Random</graphicClass>
+      <texPath>Things/Building/Art/SculptureSmall</texPath>
+    </graphicData>
+
+    <rotatable>false</rotatable>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>PassThroughOnly</passability>
+    <pathCost>70</pathCost>
+    <defaultPlacingRot>2</defaultPlacingRot>
+    <fillPercent>0.5</fillPercent>
+    <castEdgeShadows>false</castEdgeShadows>
+    <useHitPoints>true</useHitPoints>
+
+    <statBases>
+      <MaxHitPoints>90</MaxHitPoints>
+      <Mass>5</Mass>
+      <Beauty>50</Beauty>
+      <WorkToMake>18000</WorkToMake>
+      <StyleDominance MayRequire="Ludeon.RimWorld.Ideology">10</StyleDominance>
+    </statBases>
+
+    <recipeMaker Inherit="False" IsNull="True"/>
+    <building>
+      <paintable>true</paintable>
+    </building>
+
+    <comps>
+      <li Class="Apflu.VimPetrify.Exterior.CompPropertiesPetrifiedPawnStatue">
+        <compClass>Apflu.VimPetrify.Exterior.CompPetrifiedPawnStatue</compClass>
+      </li>
+    </comps>
+    <building>
+      <paintable>true</paintable>
+    </building>
+    <inspectorTabs>
+      <li>ITab_Art</li>
+    </inspectorTabs>
+
+    <minifiedDef>MinifiedPetrifiedPawnStatue</minifiedDef>
+  </ThingDef>
+
+  <ThingDef ParentName="MinifiedThing">
+    <defName>MinifiedPetrifiedPawnStatue</defName>
+    <label>minified petrified statue</label>
+    <description>A petrified statue of a pawn, currently packed up for transport.</description>
+    <graphicData>
+      <graphicClass>Graphic_Random</graphicClass>
+      <texPath>Things/Building/Art/SculptureSmall</texPath>
+    </graphicData>
+    <statBases>
+      <Mass>5</Mass>
+      <SellPriceFactor>0.1</SellPriceFactor>
+    </statBases>
+    <thingCategories>
+      <li>Items</li>
+      <li>Artifacts</li>
+    </thingCategories>
+    <comps>
+      <!--li Class="CompProperties_Art">
+        <nameMaker>MyModArtNamerPetrifiedPawn</nameMaker>
+        <descriptionMaker>MyModArtDescriptionPetrifiedPawn</descriptionMaker>
+        <canBeEnjoyedAsArt>true</canBeEnjoyedAsArt>
+      </li-->
+      <li Class="Apflu.VimPetrify.Exterior.CompPropertiesPetrifiedPawnStatue" />
+    </comps>
+    <inspectorTabs>
+      <li>ITab_Art</li>
+    </inspectorTabs>
+  </ThingDef>
+
+</Defs>

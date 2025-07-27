@@ -64,7 +64,8 @@
     <Compile Include="DefOfs.cs" />
     <Compile Include="Exterior\PetrifiedPawnStatue.cs" />
     <Compile Include="Exterior\PetrifiedPawnsTracker.cs" />
-    <Compile Include="Hediffs\Hediff_StonePetrified.cs" />
+    <Compile Include="Hediffs\HediffComp_PetrificationWatcher.cs" />
+    <Compile Include="Hediffs\PetrifiedFull.cs" />
     <Compile Include="Patches\RescueAlertPatches.cs" />
     <Compile Include="VimPetrifyCore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -15,7 +15,7 @@ namespace Apflu.VimPetrify
         {
             Log.Message($"[VimPetrify] GraphicsFor Postfix triggered for Pawn: {pawn?.LabelCap ?? "N/A"} - Node Type: {__instance.GetType().Name}");
 
-            if (pawn == null || !pawn.health.hediffSet.HasHediff(DefOfs.StonePetrifiedHediff))
+            if (pawn == null || !pawn.health.hediffSet.HasHediff(DefOfs.PetrifiedFull))
             {
                 return;
             }
@@ -45,7 +45,7 @@ namespace Apflu.VimPetrify
                 //     Log.Message($"[VimPetrify]   Material is null for graphic path: {originalGraphic.path}.");
                 // }
             }
-            __result = graphicsToModify.AsEnumerable(); // 推荐保留此行，确保修改被返回
+            __result = graphicsToModify.AsEnumerable(); 
         }
 
         private static void SetMaterialToGray(Material mat)
