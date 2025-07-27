@@ -13,7 +13,7 @@ namespace Apflu.VimPetrify.Exterior
     public static class PawnRenderer_RenderPawnAt_Patch
     {
         [HarmonyPrefix]
-        public static bool Prefix(PawnRenderer __instance, Pawn ___pawn) // Harmony 注入私有字段的语法
+        public static bool Prefix(PawnRenderer __instance, Pawn ___pawn)
         {
             //Log.Message($"[VimPetrify] RenderPawnAt Prefix triggered for Pawn: {___pawn?.LabelCap ?? "N/A"}");
 

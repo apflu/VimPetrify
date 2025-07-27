@@ -6,6 +6,7 @@ using Verse;
 
 namespace Apflu.VimPetrify.Exterior
 {
+    // TODO: It is not working currently, thus skipped for now!
     public class Graphic_PetrifiedPawn : Graphic_Single
     {
        
